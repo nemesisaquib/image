@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bulk Image Optimizer</title>
+</head>
+<body>
+  <h1>Bulk Image Optimizer</h1>
+  <input type="file" id="imageInput" multiple accept="image/*">
+  <button onclick="optimizeAndDownload()">Optimize and Download Images</button>
+
+  <!-- Include JSZip from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+
+  <script>
+    function optimizeAndDownload() {
+      var images = document.getElementById('imageInput').files;
+      if (images.length === 0) {
+        alert('Please select one or more images to optimize.');
+        return;
+      }
+
+      var promises = [];
+
+      for (var i = 0; i < images.length; i++) {
+        var file = images[i];
+        var promise = new Promise(function(resolve, reject) {
+          var reader = new FileReader();
+          reader.onload = function(event) {
+            var img = new Image();
+            img.onload = function() {
+              var canvas = document.createElement('canvas');
+              var ctx = canvas.getContext('2d');
+              canvas.width = img.width;
+              canvas.height = img.height;
+              ctx.drawImage(img, 0, 0);
+              canvas.toBlob(function(blob) {
+                var fileName = file.name.replace(/\.[^/.]+$/, "");
+                var url = window.URL.createObjectURL(blob);
+                var link = document.createElement('a');
+                link.href = url;
+                link.download = fileName + '.webp';
+                document.body.appendChild(link); // Append the link to the body
+                link.click();
+                document.body.removeChild(link); // Remove the link from the body
+                window.URL.revokeObjectURL(url); // Revoke the URL
+                resolve();
+              }, 'image/webp', 0.95); // Set quality to 0.9 (90%)
+            };
+            img.src = event.target.result;
+          };
+          reader.readAsDataURL(file);
+        });
+        promises.push(promise);
+      }
+
+      Promise.all(promises).then(function() {
+        alert('All images optimized and downloaded successfully.');
+      });
+    }
+  </script>
+</body>
+</html>
